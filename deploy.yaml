@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master-normal
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: master
+  template:
+    metadata:
+      labels:
+        app: master
+    spec:
+      containers:
+      - name: master
+        image: master:latest
+        imagePullPolicy: IfNotPresent 
+        envFrom:
+        - secretRef:
+            name: azure-secret
+        env:
+        - name: SERVER_IP
+          value: "10.96.222.72:80"
+        - name: CONTAINER_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+        - containerPort: 80
+        args: ["--A", "$(SERVER_IP)", "--id", "$(CONTAINER_IP)"]
+        command: ["./master"]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+      - name: worker
+        image: worker:latest
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: azure-secret
+        env:
+        - name: SERVICE_PORT
+          value: "80"
+        - name: CONTAINER_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+        - containerPort: 80
+        args: ["--port", "$(SERVICE_PORT)"]
+        command: ["./worker"]

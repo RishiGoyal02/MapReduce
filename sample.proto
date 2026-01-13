@@ -1,0 +1,98 @@
+// Starter Proto file, feel free to change name of the file
+syntax = "proto3";
+
+option go_package = "mapreduce/protos";
+
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
+
+service MapReduce{
+  // Mapper
+  rpc Map (MapRequest) returns (MapReply) {}
+  // Reducer
+  rpc Reduce (ReduceRequest) returns (ReduceReply) {}
+  // HeartBeat
+  rpc Pulse (Pump) returns (Pump) {}
+}
+
+message Pump {
+  int32 oxygen = 1;
+}
+
+message FileSegment {
+  string fname = 1;
+  int32 begin = 2;
+  int32 end = 3 ;
+}
+
+message MapRequest {
+  //repeated string fname = 1
+  //repeated string outname = 2
+  repeated FileSegment segments = 1;
+  string outname = 2;
+  int32 map_id = 3;
+  int32 num_reducers = 4;
+  string jobID = 5;
+  string containerName = 6;
+}
+
+message MapReply {
+  // not sure what to put here lol
+  int32 stat = 1;
+}
+
+message ReduceRequest {
+ repeated string fname = 1;
+ string outname = 2;
+}
+
+message ReduceReply {
+ int32 stat = 1;
+}
+
+
+service MasterSync {
+  // leader sends the current state periodically
+  rpc SyncState(StateSyncRequest) returns (Ack);
+
+  // new leader can request a follower’s current state after election
+  rpc GetState(GetStateRequest) returns (StateSyncRequest);
+}
+
+message Ack {
+  bool ok = 1;
+}
+
+message GetStateRequest {
+  string job_id = 1;
+}
+
+// For any given task (Map or Reduce), is it done or not
+message TaskInfo {
+  int32 id = 1;
+  bool complete = 2;
+}
+
+// For the specific job, it will say how many map and reduce tasks there are
+message JobState {
+  string job_id = 1;
+  repeated TaskInfo map_tasks = 2;
+  repeated TaskInfo reduce_tasks = 3;
+}
+
+// The periodic “state sync” message (can contain multiple jobs)
+message StateSyncRequest {
+  repeated JobState jobs = 1;
+}
